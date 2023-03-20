@@ -1,21 +1,73 @@
-# Overview
+# Website logo extractor
 
-A technical interview project for data engineers.
+Simple multithreaded Python program that reads a list of sites from stdin and visits each site,
+attempting to figure out the website's logo.
 
-The objective is to write a python program that will collect as many logos as you can across across a sample of websites.
+## Description
+
+This application is modelled as an ETL pipeline. Where the HTTP request or cache load is the `extraction` phase,
+applying a range of `beautifulsoup` selectors to extract and normalize logo links as the `transform` phase and
+storing all extracted links in memory and writing them to stdout as the `load` phase.
+
+This pattern seemed intuitive and easily allows extending the functionality of the program and modelling it
+in a way that is both horizontally and vertically scalable. Scalability can be implemented at most layers of the 
+application with minimal third party dependencies.
 
 
-# Objectives
+To understand the source code. Start at `py/logocrawler/main.py` then read `py/logo/logocrawler.py`
 
-* Write a program that will crawl a list of website and output their logo URLs.
-* The program should read domain names on `STDIN` and write a CSV of domain and logo URL to `STDOUT`.
-* A `websites.csv` list is included as a sample to crawl.
-* You can't always get it right, but try to keep precision and recall as high as you can. Be prepared to explain ways you can improve. Bonus points if you can measure.
-* Be prepared to discuss the bottlenecks as you scale up to millions of websites. You don't need to implement all the optimizations, but be able to talk about the next steps to scale it for production.
-* Favicons aren't an adequate substitute for a logo, but if you choose, it's also valuable to extract as an additional field.
-* Spare your time on implementing features that would be time consuming, but make a note of them so we can discuss the ideas.
-* Please implement using python.
-* Please keep 3rd party dependencies to a minimum, unless you feel there's an essential reason to add a dependency.
-* We use [Nix](https://nixos.org/nix/) for package management. If you add your dependencies to `default.nix`, then it's easy for us to run your code. Install nix and launch the environment with `nix-shell` (works on Linux, macOS, and most unixes).
+## Getting Started
 
-There's no time limit. Spend as much or as little time on it as you'd like. Clone this git repository (don't fork), and push to a new repository when you're ready to share. We'll schedule a follow-up call to review.
+Using nix in the root directory:
+
+```bash
+$ nix-shell
+$ wc -l websites.csv #number of sites to crawl
+$ ./runner.sh
+```
+
+Several parameters are configurable as environment parameters inside nix-shell before running the program
+
+```bash
+$ export ETL_WORKERS = 4 #number of concurrent workers
+$ export ETL_LOG = $(pwd)/debug.log #log file set to debug level
+$ export ETL_CACHE_DB = "./websites.sqlite" #sqlite cache db
+$ export ETL_MAX_CACHE_AGE=36000 #max age of downloaded site landing page
+$ export ETL_NAME="logo-extractor" #etl pipeline name
+$ 
+```
+
+### Dependencies
+
+* [beautifulsoup4](https://pypi.org/project/beautifulsoup4/)
+* [requests](https://pypi.org/project/requests/)
+
+### Key features
+
+* Multithreaded concurrent pipelines
+* Scalable design, either vertically or horizontally
+* Minimum external dependencies
+* Error reporting
+* Caching of HTTP requests
+* Documented code
+* Easily extensible to add new logo extraction rules
+
+### Limitations/TODO
+
+* Cannot read websites from stdin in a non-blocking manner
+* Selectors used to retrieve logos are not exhaustive
+* Metrics tracking is very rudimentary and reporting function is not implemented 
+* Global shared cache db resource and stdout loader lock
+* Any modifications needed to be made to files/folders
+* Not enough time to write unit tests
+
+
+## Authors
+
+Trevor Sibanda  
+[@trevorsibanda](https://github.com/trevorsibanda)
+
+## Version History
+
+* 0.1
+    * Initial Release
